@@ -1,0 +1,127 @@
+<!-- Image source: Pixaby https://pixabay.com/photos/nixie-tube-indicator-vacuum-digit-3407303/ -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nixie Tube Clock</title>
+    <style>
+        /* 배경 및 기본 레이아웃 */
+        body {
+            background-color: #060c11;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        /* 시계 컨테이너 */
+        #clock-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5vw;
+            width: 95%;
+            max-width: 1400px;
+        }
+
+        /* 숫자 이미지 설정 (글로우 없이 깔끔하게) */
+        #clock-container img {
+            width: 12vw;
+            max-width: 180px;
+            height: auto;
+            display: block;
+        }
+
+        /* 콜론 자리 (이미지 없이 빈 공간만 유지) */
+        .space {
+            width: 3vw;
+            max-width: 30px;
+        }
+
+        /* 세로 화면 최적화 */
+        @media (orientation: portrait) {
+            #clock-container { gap: 1vw; }
+            #clock-container img { width: 15vw; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="clock-container">
+        <img id="h1" src="" alt="0">
+        <img id="h2" src="" alt="0">
+        <div class="space"></div>
+        <img id="m1" src="" alt="0">
+        <img id="m2" src="" alt="0">
+        <div class="space"></div>
+        <img id="s1" src="" alt="0">
+        <img id="s2" src="" alt="0">
+    </div>
+
+    <script>
+        let wakeLock = null;
+
+        // 1. 시계 업데이트 함수
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+
+            document.getElementById('h1').src = `images/num-${h[0]}.webp`;
+            document.getElementById('h2').src = `images/num-${h[1]}.webp`;
+            document.getElementById('m1').src = `images/num-${m[0]}.webp`;
+            document.getElementById('m2').src = `images/num-${m[1]}.webp`;
+            document.getElementById('s1').src = `images/num-${s[0]}.webp`;
+            document.getElementById('s2').src = `images/num-${s[1]}.webp`;
+        }
+
+        // 2. 화면 꺼짐 방지 (Wake Lock) 제어
+        async function toggleWakeLock(enable) {
+            if ('wakeLock' in navigator) {
+                try {
+                    if (enable && wakeLock === null) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('Wake Lock 활성화: 화면이 꺼지지 않습니다.');
+                    } else if (!enable && wakeLock !== null) {
+                        await wakeLock.release();
+                        wakeLock = null;
+                        console.log('Wake Lock 해제');
+                    }
+                } catch (err) {
+                    console.error(`${err.name}, ${err.message}`);
+                }
+            }
+        }
+
+        // 3. 전체화면 토글 및 Wake Lock 연동
+        document.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen()
+                    .then(() => toggleWakeLock(true)) // 전체화면 진입 시 켜짐 방지 활성
+                    .catch(err => console.error(err));
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    toggleWakeLock(false); // 전체화면 해제 시 켜짐 방지 종료
+                }
+            }
+        });
+
+        // 전체화면 상태 변화 감지 (ESC 키 등으로 나갈 때 대응)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                toggleWakeLock(false);
+            }
+        });
+
+        // 초기 실행
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
